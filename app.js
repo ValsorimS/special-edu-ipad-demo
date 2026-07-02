@@ -199,7 +199,7 @@ function renderHome() {
   const cards = [
     {
       title: "Komunikační kniha",
-      goal: "Klepni na kartičku a aplikace ji přečte nahlas.",
+      goal: "Velké obrázky a hlas pro rychlé vyjádření.",
       symbol: "💬",
       color: "#0ea5e9",
       action: "communication"
@@ -215,7 +215,7 @@ function renderHome() {
 
   pageShell(
     "Speciální aktivity",
-    "Barevné učení pro iPad a Safari",
+    "Obrázky, hlas a barevné učení pro iPad",
     `<section class="grid">
       ${cards
         .map(
@@ -250,7 +250,9 @@ function startActivity(activity) {
     correct: 0,
     order: shuffle(activity.cards),
     selected: null,
-    feedback: ""
+    feedback: "",
+    shouldSpeakPrompt: true,
+    promptDelay: 260
   };
   renderActivity();
 }
@@ -294,8 +296,12 @@ function renderMatching(activity, target, progress, prompt) {
   );
   bindSpeechButtons();
   document.querySelectorAll("[data-choice]").forEach((button) => {
-    button.addEventListener("click", () => answer(button.dataset.choice === target.id));
+    button.addEventListener("click", () => {
+      speak(button.dataset.label, activity.language);
+      setTimeout(() => answer(button.dataset.choice === target.id), 560);
+    });
   });
+  maybeSpeakPrompt(prompt, activity.language);
 }
 
 function renderSorting(activity, target, progress, prompt) {
@@ -320,13 +326,18 @@ function renderSorting(activity, target, progress, prompt) {
   );
   bindSpeechButtons();
   document.querySelectorAll("[data-category]").forEach((button) => {
-    button.addEventListener("click", () => answer(button.dataset.category === target.categoryID));
+    button.addEventListener("click", () => {
+      speak(button.dataset.label, activity.language);
+      setTimeout(() => answer(button.dataset.category === target.categoryID), 560);
+    });
   });
+  maybeSpeakPrompt(prompt, activity.language);
 }
 
 function choiceCard(card) {
   return `
-    <button class="choice-card" data-choice="${card.id}" style="--card-color: ${color(card.color)}">
+    <button class="choice-card" data-choice="${card.id}" data-label="${card.label}" style="--card-color: ${color(card.color)}">
+      <span class="listen-hint">🔊</span>
       <span class="card-symbol">${symbol(card.symbol)}</span>
       <span class="card-label">${card.label}</span>
     </button>
@@ -335,7 +346,8 @@ function choiceCard(card) {
 
 function categoryCard(card) {
   return `
-    <button class="category-card" data-category="${card.id}" style="--card-color: ${color(card.color)}">
+    <button class="category-card" data-category="${card.id}" data-label="${card.label}" style="--card-color: ${color(card.color)}">
+      <span class="listen-hint">🔊</span>
       <span class="card-symbol">${symbol(card.symbol)}</span>
       <span class="card-label">${card.label}</span>
     </button>
@@ -347,10 +359,14 @@ function answer(isCorrect) {
     state.feedback = "Správně!";
     state.feedbackClass = "good";
     state.round += 1;
-    setTimeout(renderActivity, 460);
+    state.shouldSpeakPrompt = true;
+    state.promptDelay = 900;
+    speak("Správně.", state.activity.language);
+    setTimeout(renderActivity, 620);
   } else {
     state.feedback = "Zkus to ještě jednou.";
     state.feedbackClass = "try";
+    speak("Zkus to ještě jednou.", state.activity.language);
     renderActivity();
   }
 }
@@ -378,12 +394,13 @@ function renderCompletion(activity) {
 function renderCommunication() {
   pageShell(
     "Komunikační kniha",
-    "Klepni na kartičku a přečte se nahlas",
+    "Klepni na obrázek, aplikace ho přečte nahlas",
     `<section class="grid">
       ${communicationCards
         .map(
           (card) => `
             <button class="comm-card" data-phrase="${card.phrase}" style="--card-color: ${card.color}">
+              <span class="listen-hint">🔊</span>
               <span class="card-symbol">${card.symbol}</span>
               <span class="card-label">${card.label}</span>
             </button>
@@ -406,6 +423,13 @@ function bindSpeechButtons() {
   document.querySelectorAll("[data-speak]").forEach((button) => {
     button.addEventListener("click", () => speak(button.dataset.speak));
   });
+}
+
+function maybeSpeakPrompt(prompt, language) {
+  if (!state.shouldSpeakPrompt) return;
+  const delay = state.promptDelay || 260;
+  state.shouldSpeakPrompt = false;
+  setTimeout(() => speak(prompt, language), delay);
 }
 
 renderHome();
