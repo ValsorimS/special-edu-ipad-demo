@@ -142,8 +142,18 @@ const communicationCards = [
   { id: "no", label: "Ne", phrase: "Ne.", symbol: "×", color: "#92400e" }
 ];
 
+const musicTiles = [
+  { id: "red", label: "Červená", note: "Do", symbol: "●", color: "#ef4444", frequency: 261.63 },
+  { id: "orange", label: "Oranžová", note: "Re", symbol: "●", color: "#f97316", frequency: 293.66 },
+  { id: "yellow", label: "Žlutá", note: "Mi", symbol: "●", color: "#facc15", frequency: 329.63 },
+  { id: "green", label: "Zelená", note: "Fa", symbol: "●", color: "#16a34a", frequency: 349.23 },
+  { id: "blue", label: "Modrá", note: "Sol", symbol: "●", color: "#2563eb", frequency: 392.0 },
+  { id: "purple", label: "Fialová", note: "La", symbol: "●", color: "#7c3aed", frequency: 440.0 }
+];
+
 const app = document.querySelector("#app");
 let state = {};
+let audioContext;
 
 function speak(text, language = "cs-CZ") {
   if (!("speechSynthesis" in window)) return;
@@ -155,6 +165,28 @@ function speak(text, language = "cs-CZ") {
   const voice = window.speechSynthesis.getVoices().find((item) => item.lang === language);
   if (voice) utterance.voice = voice;
   window.speechSynthesis.speak(utterance);
+}
+
+function playTone(frequency, duration = 0.55) {
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass) return;
+  audioContext ||= new AudioContextClass();
+  if (audioContext.state === "suspended") audioContext.resume();
+
+  const oscillator = audioContext.createOscillator();
+  const gain = audioContext.createGain();
+  const now = audioContext.currentTime;
+
+  oscillator.type = "sine";
+  oscillator.frequency.setValueAtTime(frequency, now);
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(0.28, now + 0.04);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+  oscillator.connect(gain);
+  gain.connect(audioContext.destination);
+  oscillator.start(now);
+  oscillator.stop(now + duration + 0.03);
 }
 
 function color(name) {
@@ -204,6 +236,13 @@ function renderHome() {
       color: "#0ea5e9",
       action: "communication"
     },
+    {
+      title: "Hudební barvy",
+      goal: "Barevné dlaždice hrají tóny a říkají názvy barev.",
+      symbol: "🎵",
+      color: "#f97316",
+      action: "music"
+    },
     ...activities.map((activity) => ({
       title: activity.title,
       goal: activity.teacherGoal,
@@ -236,6 +275,8 @@ function renderHome() {
       const id = button.dataset.card;
       if (id === "communication") {
         renderCommunication();
+      } else if (id === "music") {
+        renderMusic();
       } else {
         startActivity(activities.find((activity) => activity.id === id));
       }
@@ -416,6 +457,67 @@ function renderCommunication() {
       button.classList.add("selected");
       speak(button.dataset.phrase);
     });
+  });
+}
+
+function renderMusic() {
+  pageShell(
+    "Hudební barvy",
+    "Klepni na barvu. Zahraje tón a řekne název.",
+    `<section class="music-grid">
+      ${musicTiles
+        .map(
+          (tile) => `
+            <button class="music-tile" data-music="${tile.id}" style="--card-color: ${tile.color}">
+              <span class="listen-hint">🎵</span>
+              <span class="music-symbol">${tile.symbol}</span>
+              <span class="card-label">${tile.label}</span>
+              <span class="note-pill">${tile.note}</span>
+            </button>
+          `
+        )
+        .join("")}
+    </section>
+    <div class="completion-actions">
+      <button class="primary-button" data-action="rainbow">Zahraj duhu</button>
+      <button class="secondary-button" data-action="quiet">Ticho</button>
+    </div>`,
+    true
+  );
+
+  setTimeout(() => speak("Klepni na barvu."), 260);
+
+  document.querySelectorAll("[data-music]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const tile = musicTiles.find((item) => item.id === button.dataset.music);
+      if (!tile) return;
+      document.querySelectorAll(".music-tile").forEach((item) => item.classList.remove("selected"));
+      button.classList.add("selected");
+      playTone(tile.frequency);
+      speak(tile.label);
+      setTimeout(() => button.classList.remove("selected"), 650);
+    });
+  });
+
+  document.querySelector('[data-action="rainbow"]').addEventListener("click", playRainbow);
+  document.querySelector('[data-action="quiet"]').addEventListener("click", () => window.speechSynthesis?.cancel());
+}
+
+function playRainbow() {
+  window.speechSynthesis?.cancel();
+  musicTiles.forEach((tile, index) => {
+    setTimeout(() => {
+      document.querySelectorAll(".music-tile").forEach((item) => item.classList.remove("selected"));
+      const button = document.querySelector(`[data-music="${tile.id}"]`);
+      button?.classList.add("selected");
+      playTone(tile.frequency, 0.42);
+      if (index === musicTiles.length - 1) {
+        setTimeout(() => {
+          button?.classList.remove("selected");
+          speak("Duhová písnička.");
+        }, 460);
+      }
+    }, index * 520);
   });
 }
 

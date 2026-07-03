@@ -226,6 +226,12 @@ h1 {
   gap: 18px;
 }
 
+.music-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 18px;
+}
+
 .choice-card,
 .category-card,
 .comm-card {
@@ -236,9 +242,21 @@ h1 {
   color: var(--ink);
 }
 
+.music-tile {
+  position: relative;
+  min-height: 240px;
+  padding: 18px;
+  border: 0;
+  border-radius: 30px;
+  background: linear-gradient(135deg, white, color-mix(in srgb, var(--card-color) 28%, white));
+  color: var(--ink);
+  box-shadow: 0 14px 30px var(--shadow);
+}
+
 .choice-card.selected,
 .category-card.selected,
-.comm-card.selected {
+.comm-card.selected,
+.music-tile.selected {
   outline: 7px solid color-mix(in srgb, var(--card-color) 70%, white);
   transform: scale(1.025);
 }
@@ -257,6 +275,20 @@ h1 {
   box-shadow: 0 12px 22px color-mix(in srgb, var(--card-color) 22%, transparent);
 }
 
+.music-symbol {
+  display: grid;
+  width: 108px;
+  height: 108px;
+  margin: 0 auto 18px;
+  place-items: center;
+  border-radius: 30px;
+  background: var(--card-color);
+  color: white;
+  font-size: 54px;
+  font-weight: 1000;
+  box-shadow: 0 12px 22px color-mix(in srgb, var(--card-color) 22%, transparent);
+}
+
 .listen-hint {
   position: absolute;
   top: 14px;
@@ -271,6 +303,18 @@ h1 {
   color: white;
   font-size: 21px;
   box-shadow: 0 8px 18px color-mix(in srgb, var(--card-color) 18%, transparent);
+}
+
+.note-pill {
+  display: block;
+  width: fit-content;
+  margin: 14px auto 0;
+  padding: 7px 18px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--card-color) 18%, white);
+  color: var(--card-color);
+  font-size: 22px;
+  font-weight: 1000;
 }
 
 .card-label {
